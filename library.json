@@ -1,0 +1,20 @@
+{
+    "name": "SpresenseNeoPixel",
+    "keywords": "neopixel,spresense",
+    "description": "NeoPixel library for SPRESENSE (Arduino)",
+    "repository":
+    {
+        "type": "git",
+        "url": "https://github.com/hideakitai/SpresenseNeoPixel.git"
+    },
+    "authors":
+    {
+        "name": "Hideaki Tai",
+        "url": "https://github.com/hideakitai",
+        "maintainer": true
+    },
+    "version": "0.1.0",
+    "license": "MIT",
+    "frameworks": "arduino",
+    "platforms": "*"
+}
