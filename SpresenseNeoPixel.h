@@ -12,6 +12,8 @@ class SpresenseNeoPixel
     uint32_t reg_val;
 
     uint8_t pixels[N_PIXELS * 3];
+    uint32_t interval_us {25000}; // 40fps
+    uint32_t prev_us {0};
 
     const uint16_t n_wait_cycles_t0h_t1l;
     const uint16_t n_wait_cycles_t1h_t0l;
@@ -23,7 +25,7 @@ public:
     SpresenseNeoPixel()
     : n_wait_cycles_t0h_t1l(4)
     , n_wait_cycles_t1h_t0l(20)
-    , n_wait_cycles_offset(2)
+    , n_wait_cycles_offset(5)
     , n_wait_us_reset(50)
     {
         pinMode(PIN, OUTPUT);
@@ -38,21 +40,26 @@ public:
 
     inline void show()
     {
-        write(LOW);
-        delayMicroseconds(n_wait_us_reset);
-        noInterrupts();
-        for (uint8_t i = 0; i < N_PIXELS * 3; ++i)
+        uint32_t curr_us = micros();
+        if (curr_us >= prev_us + interval_us)
         {
-            (pixels[i] & 0x80) ? one() : zero();
-            (pixels[i] & 0x40) ? one() : zero();
-            (pixels[i] & 0x20) ? one() : zero();
-            (pixels[i] & 0x10) ? one() : zero();
-            (pixels[i] & 0x08) ? one() : zero();
-            (pixels[i] & 0x04) ? one() : zero();
-            (pixels[i] & 0x02) ? one() : zero();
-            (pixels[i] & 0x01) ? one() : zero();
+            write(LOW);
+            delayMicroseconds(n_wait_us_reset);
+            noInterrupts();
+            for (uint8_t i = 0; i < N_PIXELS * 3; ++i)
+            {
+                (pixels[i] & 0x80) ? one() : zero();
+                (pixels[i] & 0x40) ? one() : zero();
+                (pixels[i] & 0x20) ? one() : zero();
+                (pixels[i] & 0x10) ? one() : zero();
+                (pixels[i] & 0x08) ? one() : zero();
+                (pixels[i] & 0x04) ? one() : zero();
+                (pixels[i] & 0x02) ? one() : zero();
+                (pixels[i] & 0x01) ? one() : zero();
+            }
+            interrupts();
+            prev_us = curr_us;
         }
-        interrupts();
     }
 
     inline void clear()
@@ -78,6 +85,16 @@ public:
     inline void set(uint8_t brightness)
     {
         set(brightness, brightness, brightness);
+    }
+
+    inline void framerate(float fps)
+    {
+        interval_us = (uint32_t)(1000000.f / fps);
+    }
+
+    inline void interval(uint32_t us)
+    {
+        interval_us = us;
     }
 
 private:
