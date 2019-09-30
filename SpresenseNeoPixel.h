@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include "wiring_private.h"
 
-template <uint8_t PIN, uint16_t N_PIXELS>
+template <uint8_t PIN, uint32_t N_PIXELS>
 class SpresenseNeoPixel
 {
     uint32_t reg;
@@ -15,18 +15,16 @@ class SpresenseNeoPixel
     uint32_t interval_us {25000}; // 40fps
     uint32_t prev_us {0};
 
-    const uint16_t n_wait_cycles_t0h_t1l;
-    const uint16_t n_wait_cycles_t1h_t0l;
-    const uint16_t n_wait_cycles_offset;
-    const uint16_t n_wait_us_reset;
+    const uint32_t n_wait_cycles_t0h_t1l;
+    const uint32_t n_wait_cycles_t1h_t0l;
+    const uint32_t n_wait_cycles_reset;
 
 public:
 
     SpresenseNeoPixel()
-    : n_wait_cycles_t0h_t1l(4)
-    , n_wait_cycles_t1h_t0l(20)
-    , n_wait_cycles_offset(5)
-    , n_wait_us_reset(50)
+    : n_wait_cycles_t0h_t1l(1)
+    , n_wait_cycles_t1h_t0l(28)
+    , n_wait_cycles_reset(1)
     {
         pinMode(PIN, OUTPUT);
         digitalWrite(PIN, LOW);
@@ -43,19 +41,23 @@ public:
         uint32_t curr_us = micros();
         if (curr_us >= prev_us + interval_us)
         {
-            write(LOW);
-            delayMicroseconds(n_wait_us_reset);
             noInterrupts();
-            for (uint8_t i = 0; i < N_PIXELS * 3; ++i)
+            for (uint32_t pixel = 0; pixel < N_PIXELS; ++pixel)
             {
-                (pixels[i] & 0x80) ? one() : zero();
-                (pixels[i] & 0x40) ? one() : zero();
-                (pixels[i] & 0x20) ? one() : zero();
-                (pixels[i] & 0x10) ? one() : zero();
-                (pixels[i] & 0x08) ? one() : zero();
-                (pixels[i] & 0x04) ? one() : zero();
-                (pixels[i] & 0x02) ? one() : zero();
-                (pixels[i] & 0x01) ? one() : zero();
+                write(LOW);
+                wait_cycles(n_wait_cycles_reset);
+                for (uint32_t rgb = 0; rgb < 3; ++rgb)
+                {
+                    uint32_t i = pixel * 3 + rgb;
+                    (pixels[i] & 0x80) ? one() : zero();
+                    (pixels[i] & 0x40) ? one() : zero();
+                    (pixels[i] & 0x20) ? one() : zero();
+                    (pixels[i] & 0x10) ? one() : zero();
+                    (pixels[i] & 0x08) ? one() : zero();
+                    (pixels[i] & 0x04) ? one() : zero();
+                    (pixels[i] & 0x02) ? one() : zero();
+                    (pixels[i] & 0x01) ? one() : zero();
+                }
             }
             interrupts();
             prev_us = curr_us;
@@ -67,7 +69,7 @@ public:
         memset(pixels, 0, N_PIXELS * 3);
     }
 
-    inline void set(uint8_t n, uint8_t r, uint8_t g, uint8_t b)
+    inline void set(uint32_t n, uint8_t r, uint8_t g, uint8_t b)
     {
         if (n < N_PIXELS)
         {
@@ -105,7 +107,6 @@ private:
         wait_cycles(n_wait_cycles_t0h_t1l);
         write(LOW);
         wait_cycles(n_wait_cycles_t1h_t0l);
-        wait_cycles(n_wait_cycles_offset); // buffer
     }
 
     inline void one()
@@ -114,7 +115,6 @@ private:
         wait_cycles(n_wait_cycles_t1h_t0l);
         write(LOW);
         wait_cycles(n_wait_cycles_t0h_t1l);
-        wait_cycles(n_wait_cycles_offset); // buffer
     }
 
     inline void write(uint8_t value)
