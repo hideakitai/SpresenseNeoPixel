@@ -15,6 +15,8 @@ class SpresenseNeoPixel
     uint32_t interval_us {25000}; // 40fps
     uint32_t prev_us {0};
 
+    float scale {1.f};
+
     const uint32_t n_wait_cycles_t0h_t1l;
     const uint32_t n_wait_cycles_t1h_t0l;
     const uint32_t n_wait_cycles_reset;
@@ -73,9 +75,9 @@ public:
     {
         if (n < N_PIXELS)
         {
-            pixels[n * 3 + 0] = g;
-            pixels[n * 3 + 1] = r;
-            pixels[n * 3 + 2] = b;
+            pixels[n * 3 + 0] = (uint8_t)((float)g * scale);
+            pixels[n * 3 + 1] = (uint8_t)((float)r * scale);
+            pixels[n * 3 + 2] = (uint8_t)((float)b * scale);
         }
     }
 
@@ -87,6 +89,11 @@ public:
     inline void set(uint8_t brightness)
     {
         set(brightness, brightness, brightness);
+    }
+
+    inline void brightness(uint8_t b)
+    {
+        scale = (float)b / 255.f;
     }
 
     inline void framerate(float fps)
